@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'xendit' => [
+        'secret_key' => env('XENDIT_SECRET_KEY'),
+        'webhook_token' => env('XENDIT_WEBHOOK_TOKEN'),
+        'success_redirect_url' => env('XENDIT_SUCCESS_REDIRECT_URL', 'http://localhost:3000/orders'),
+        'failure_redirect_url' => env('XENDIT_FAILURE_REDIRECT_URL', 'http://localhost:3000/checkout/failed'),
+    ],
+
 ];
