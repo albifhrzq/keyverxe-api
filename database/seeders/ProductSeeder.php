@@ -53,6 +53,8 @@ class ProductSeeder extends Seeder
                 'price' => 450000,
                 'stock' => 100,
                 'is_active' => true,
+                'is_homepage_featured' => true,
+                'switch_asset_profile' => 'red',
             ],
             [
                 'category_id' => $switches->id,
@@ -62,6 +64,8 @@ class ProductSeeder extends Seeder
                 'price' => 520000,
                 'stock' => 80,
                 'is_active' => true,
+                'is_homepage_featured' => true,
+                'switch_asset_profile' => 'brown',
             ],
             [
                 'category_id' => $switches->id,
@@ -71,6 +75,19 @@ class ProductSeeder extends Seeder
                 'price' => 480000,
                 'stock' => 60,
                 'is_active' => true,
+                'is_homepage_featured' => true,
+                'switch_asset_profile' => 'black',
+            ],
+            [
+                'category_id' => $switches->id,
+                'name' => 'Azure Clicky Switch (70pcs)',
+                'slug' => 'azure-clicky-switch',
+                'description' => 'Clicky switches with a bright tactile snap and a crisp top-end sound. Built for typists who want every press to feel alive. 70 switches per pack.',
+                'price' => 495000,
+                'stock' => 55,
+                'is_active' => true,
+                'is_homepage_featured' => true,
+                'switch_asset_profile' => 'blue',
             ],
 
             // Keycaps (3)

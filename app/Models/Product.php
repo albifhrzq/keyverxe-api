@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
+    public const SWITCH_ASSET_PROFILES = [
+        'red',
+        'brown',
+        'blue',
+        'black',
+    ];
+
     protected $fillable = [
         'category_id',
         'name',
@@ -17,6 +24,8 @@ class Product extends Model
         'stock',
         'image',
         'is_active',
+        'is_homepage_featured',
+        'switch_asset_profile',
     ];
 
     protected function casts(): array
@@ -24,6 +33,7 @@ class Product extends Model
         return [
             'price' => 'decimal:2',
             'is_active' => 'boolean',
+            'is_homepage_featured' => 'boolean',
         ];
     }
 

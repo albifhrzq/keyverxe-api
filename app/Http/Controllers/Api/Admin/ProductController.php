@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -48,7 +51,19 @@ class ProductController extends Controller
             'stock' => ['required', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'is_active' => ['boolean'],
+            'is_homepage_featured' => ['nullable', 'boolean'],
+            'switch_asset_profile' => ['nullable', 'string', Rule::in(Product::SWITCH_ASSET_PROFILES)],
         ]);
+        $validated['is_homepage_featured'] = $request->boolean('is_homepage_featured');
+        $validated['switch_asset_profile'] = $this->normalizeSwitchAssetProfile(
+            (int) $validated['category_id'],
+            $validated['switch_asset_profile'] ?? null,
+        );
+        $this->validateHomepageFeature(
+            (int) $validated['category_id'],
+            $validated['is_homepage_featured'],
+            $validated['switch_asset_profile'],
+        );
 
         $validated['slug'] = Str::slug($validated['name']);
 
@@ -96,7 +111,20 @@ class ProductController extends Controller
             'stock' => ['required', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'is_active' => ['boolean'],
+            'is_homepage_featured' => ['nullable', 'boolean'],
+            'switch_asset_profile' => ['nullable', 'string', Rule::in(Product::SWITCH_ASSET_PROFILES)],
         ]);
+        $validated['is_homepage_featured'] = $request->boolean('is_homepage_featured');
+        $validated['switch_asset_profile'] = $this->normalizeSwitchAssetProfile(
+            (int) $validated['category_id'],
+            $validated['switch_asset_profile'] ?? null,
+        );
+        $this->validateHomepageFeature(
+            (int) $validated['category_id'],
+            $validated['is_homepage_featured'],
+            $validated['switch_asset_profile'],
+            $product->id,
+        );
 
         $newSlug = Str::slug($validated['name']);
 
@@ -146,5 +174,71 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'Product deleted successfully',
         ]);
+    }
+
+    /**
+     * Featured homepage slots are reserved for up to 4 switch products.
+     */
+    protected function validateHomepageFeature(
+        int $categoryId,
+        bool $isHomepageFeatured,
+        ?string $switchAssetProfile,
+        ?int $ignoreProductId = null,
+    ): void
+    {
+        $isSwitchCategory = Category::query()
+            ->whereKey($categoryId)
+            ->where('slug', 'switches')
+            ->exists();
+
+        if (!$isSwitchCategory) {
+            if (!$isHomepageFeatured) {
+                return;
+            }
+
+            throw ValidationException::withMessages([
+                'is_homepage_featured' => ['Only switch products can appear in Craft Your Click.'],
+            ]);
+        }
+
+        if ($isHomepageFeatured && !$switchAssetProfile) {
+            throw ValidationException::withMessages([
+                'switch_asset_profile' => ['Choose a switch asset profile before featuring this product on the homepage.'],
+            ]);
+        }
+
+        if (!$isHomepageFeatured) {
+            return;
+        }
+
+        $featuredCount = Product::query()
+            ->where('is_homepage_featured', true)
+            ->whereHas('category', function ($query) {
+                $query->where('slug', 'switches');
+            })
+            ->when($ignoreProductId, function ($query, $ignoreProductId) {
+                $query->where('id', '!=', $ignoreProductId);
+            })
+            ->count();
+
+        if ($featuredCount >= 4) {
+            throw ValidationException::withMessages([
+                'is_homepage_featured' => ['Only 4 switch products can be featured on the homepage at a time.'],
+            ]);
+        }
+    }
+
+    protected function normalizeSwitchAssetProfile(int $categoryId, ?string $switchAssetProfile): ?string
+    {
+        $isSwitchCategory = Category::query()
+            ->whereKey($categoryId)
+            ->where('slug', 'switches')
+            ->exists();
+
+        if (!$isSwitchCategory) {
+            return null;
+        }
+
+        return $switchAssetProfile;
     }
 }

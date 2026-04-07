@@ -15,6 +15,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Product::with('category')->where('is_active', true);
+        $isHomepageFeaturedRequest = $request->boolean('featured_homepage');
 
         if ($request->has('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -36,7 +37,22 @@ class ProductController extends Controller
             });
         }
 
-        $products = $query->latest()->paginate($request->input('per_page', 12));
+        if ($isHomepageFeaturedRequest) {
+            $query->where('is_homepage_featured', true)
+                ->whereNotNull('switch_asset_profile')
+                ->orderByDesc('updated_at');
+        } else {
+            $query->latest();
+        }
+
+        $defaultPerPage = $isHomepageFeaturedRequest ? 4 : 12;
+        $perPage = max((int) $request->input('per_page', $defaultPerPage), 1);
+
+        if ($isHomepageFeaturedRequest) {
+            $perPage = min($perPage, 4);
+        }
+
+        $products = $query->paginate($perPage);
 
         return response()->json($products);
     }
