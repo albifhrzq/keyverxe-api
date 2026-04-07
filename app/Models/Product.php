@@ -26,6 +26,7 @@ class Product extends Model
         'is_active',
         'is_homepage_featured',
         'switch_asset_profile',
+        'keycap_texture_uv',
     ];
 
     protected function casts(): array

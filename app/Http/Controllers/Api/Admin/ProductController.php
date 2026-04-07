@@ -53,11 +53,16 @@ class ProductController extends Controller
             'is_active' => ['boolean'],
             'is_homepage_featured' => ['nullable', 'boolean'],
             'switch_asset_profile' => ['nullable', 'string', Rule::in(Product::SWITCH_ASSET_PROFILES)],
+            'keycap_texture_uv' => ['nullable', 'string', 'max:2048'],
         ]);
         $validated['is_homepage_featured'] = $request->boolean('is_homepage_featured');
         $validated['switch_asset_profile'] = $this->normalizeSwitchAssetProfile(
             (int) $validated['category_id'],
             $validated['switch_asset_profile'] ?? null,
+        );
+        $validated['keycap_texture_uv'] = $this->normalizeKeycapTextureUv(
+            (int) $validated['category_id'],
+            $validated['keycap_texture_uv'] ?? null,
         );
         $this->validateHomepageFeature(
             (int) $validated['category_id'],
@@ -113,11 +118,16 @@ class ProductController extends Controller
             'is_active' => ['boolean'],
             'is_homepage_featured' => ['nullable', 'boolean'],
             'switch_asset_profile' => ['nullable', 'string', Rule::in(Product::SWITCH_ASSET_PROFILES)],
+            'keycap_texture_uv' => ['nullable', 'string', 'max:2048'],
         ]);
         $validated['is_homepage_featured'] = $request->boolean('is_homepage_featured');
         $validated['switch_asset_profile'] = $this->normalizeSwitchAssetProfile(
             (int) $validated['category_id'],
             $validated['switch_asset_profile'] ?? null,
+        );
+        $validated['keycap_texture_uv'] = $this->normalizeKeycapTextureUv(
+            (int) $validated['category_id'],
+            $validated['keycap_texture_uv'] ?? null,
         );
         $this->validateHomepageFeature(
             (int) $validated['category_id'],
@@ -240,5 +250,21 @@ class ProductController extends Controller
         }
 
         return $switchAssetProfile;
+    }
+
+    protected function normalizeKeycapTextureUv(int $categoryId, ?string $keycapTextureUv): ?string
+    {
+        $isKeycapCategory = Category::query()
+            ->whereKey($categoryId)
+            ->where('slug', 'keycaps')
+            ->exists();
+
+        if (!$isKeycapCategory) {
+            return null;
+        }
+
+        $normalized = trim((string) $keycapTextureUv);
+
+        return $normalized !== '' ? $normalized : null;
     }
 }

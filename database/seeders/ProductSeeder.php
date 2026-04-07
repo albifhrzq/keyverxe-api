@@ -99,6 +99,7 @@ class ProductSeeder extends Seeder
                 'price' => 650000,
                 'stock' => 45,
                 'is_active' => true,
+                'keycap_texture_uv' => '/cherrynavy_uv.png',
             ],
             [
                 'category_id' => $keycaps->id,
@@ -108,6 +109,7 @@ class ProductSeeder extends Seeder
                 'price' => 550000,
                 'stock' => 35,
                 'is_active' => true,
+                'keycap_texture_uv' => '/dreamboard_uv.png',
             ],
             [
                 'category_id' => $keycaps->id,
@@ -117,6 +119,7 @@ class ProductSeeder extends Seeder
                 'price' => 750000,
                 'stock' => 20,
                 'is_active' => true,
+                'keycap_texture_uv' => '/oldschool_uv.png',
             ],
         ];
 

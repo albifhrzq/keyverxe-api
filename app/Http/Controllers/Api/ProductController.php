@@ -37,6 +37,10 @@ class ProductController extends Controller
             });
         }
 
+        if ($request->boolean('has_keycap_texture')) {
+            $query->whereNotNull('keycap_texture_uv');
+        }
+
         if ($isHomepageFeaturedRequest) {
             $query->where('is_homepage_featured', true)
                 ->whereNotNull('switch_asset_profile')
