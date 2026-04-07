@@ -30,6 +30,12 @@ class ProductController extends Controller
             });
         }
 
+        if ($request->has('category')) {
+            $query->whereHas('category', function ($q) use ($request) {
+                $q->where('slug', $request->category);
+            });
+        }
+
         $products = $query->latest()->paginate($request->input('per_page', 12));
 
         return response()->json($products);
