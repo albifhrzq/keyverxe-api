@@ -14,7 +14,7 @@ class OrderController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $orders = Order::with('payment')
+        $orders = Order::with(['payment', 'orderItems.product'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->paginate($request->input('per_page', 10));
