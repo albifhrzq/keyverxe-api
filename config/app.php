@@ -123,4 +123,18 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Application Configurations
+    |--------------------------------------------------------------------------
+    |
+    | Define custom environment variables here to route them through the
+    | config layer explicitly before usage.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
+
+    'sanctum_stateful_domains' => env('SANCTUM_STATEFUL_DOMAINS', 'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1'),
+
 ];
