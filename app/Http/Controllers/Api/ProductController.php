@@ -17,21 +17,21 @@ class ProductController extends Controller
         $query = Product::with('category')->where('is_active', true);
         $isHomepageFeaturedRequest = $request->boolean('featured_homepage');
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        if ($request->has('category_id')) {
+        if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        if ($request->has('category_slug')) {
+        if ($request->filled('category_slug')) {
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('slug', $request->category_slug);
             });
         }
 
-        if ($request->has('category')) {
+        if ($request->filled('category')) {
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('slug', $request->category);
             });
