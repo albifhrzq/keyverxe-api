@@ -41,9 +41,14 @@ class ProductController extends Controller
             $query->whereNotNull('keycap_texture_uv');
         }
 
+        if ($request->boolean('has_keyboard_texture')) {
+            $query->whereNotNull('keyboard_texture_uv');
+        }
+
         if ($isHomepageFeaturedRequest) {
             $query->where('is_homepage_featured', true)
-                ->whereNotNull('switch_asset_profile')
+                ->whereNotNull('switch_color')
+                ->whereNotNull('switch_type')
                 ->orderByDesc('updated_at');
         } else {
             $query->latest();

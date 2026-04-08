@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    public const SWITCH_ASSET_PROFILES = [
-        'red',
-        'brown',
-        'blue',
-        'black',
+    public const SWITCH_TYPES = [
+        'linear',
+        'tactile',
+        'clicky',
+        'silent',
     ];
 
     protected $fillable = [
@@ -25,8 +25,11 @@ class Product extends Model
         'image',
         'is_active',
         'is_homepage_featured',
-        'switch_asset_profile',
+        'switch_color',
+        'switch_type',
+        'switch_sound_paths',
         'keycap_texture_uv',
+        'keyboard_texture_uv',
     ];
 
     protected function casts(): array
@@ -35,6 +38,7 @@ class Product extends Model
             'price' => 'decimal:2',
             'is_active' => 'boolean',
             'is_homepage_featured' => 'boolean',
+            'switch_sound_paths' => 'array',
         ];
     }
 

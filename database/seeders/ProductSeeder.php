@@ -24,6 +24,7 @@ class ProductSeeder extends Seeder
                 'price' => 2500000,
                 'stock' => 25,
                 'is_active' => true,
+                'keyboard_texture_uv' => '/goodwell_uv.png',
             ],
             [
                 'category_id' => $keyboards->id,
@@ -33,6 +34,7 @@ class ProductSeeder extends Seeder
                 'price' => 1850000,
                 'stock' => 30,
                 'is_active' => true,
+                'keyboard_texture_uv' => '/dreamboard_uv.png',
             ],
             [
                 'category_id' => $keyboards->id,
@@ -42,6 +44,7 @@ class ProductSeeder extends Seeder
                 'price' => 3200000,
                 'stock' => 15,
                 'is_active' => true,
+                'keyboard_texture_uv' => '/oldschool_uv.png',
             ],
 
             // Switches (3)
@@ -54,7 +57,9 @@ class ProductSeeder extends Seeder
                 'stock' => 100,
                 'is_active' => true,
                 'is_homepage_featured' => true,
-                'switch_asset_profile' => 'red',
+                'switch_color' => '#EF4444',
+                'switch_type' => 'linear',
+                'switch_sound_paths' => ['/sounds/red-1.mp3', '/sounds/red-2.mp3', '/sounds/red-3.mp3'],
             ],
             [
                 'category_id' => $switches->id,
@@ -65,7 +70,9 @@ class ProductSeeder extends Seeder
                 'stock' => 80,
                 'is_active' => true,
                 'is_homepage_featured' => true,
-                'switch_asset_profile' => 'brown',
+                'switch_color' => '#C08457',
+                'switch_type' => 'tactile',
+                'switch_sound_paths' => ['/sounds/brown-1.mp3', '/sounds/brown-2.mp3', '/sounds/brown-3.mp3'],
             ],
             [
                 'category_id' => $switches->id,
@@ -76,7 +83,9 @@ class ProductSeeder extends Seeder
                 'stock' => 60,
                 'is_active' => true,
                 'is_homepage_featured' => true,
-                'switch_asset_profile' => 'black',
+                'switch_color' => '#94A3B8',
+                'switch_type' => 'silent',
+                'switch_sound_paths' => ['/sounds/black-1.mp3', '/sounds/black-2.mp3', '/sounds/black-3.mp3'],
             ],
             [
                 'category_id' => $switches->id,
@@ -87,7 +96,9 @@ class ProductSeeder extends Seeder
                 'stock' => 55,
                 'is_active' => true,
                 'is_homepage_featured' => true,
-                'switch_asset_profile' => 'blue',
+                'switch_color' => '#38BDF8',
+                'switch_type' => 'clicky',
+                'switch_sound_paths' => ['/sounds/blue-1.mp3', '/sounds/blue-2.mp3', '/sounds/blue-3.mp3'],
             ],
 
             // Keycaps (3)
@@ -99,7 +110,7 @@ class ProductSeeder extends Seeder
                 'price' => 650000,
                 'stock' => 45,
                 'is_active' => true,
-                'keycap_texture_uv' => '/cherrynavy_uv.png',
+                'keycap_texture_uv' => '/keycap_uv-1.png',
             ],
             [
                 'category_id' => $keycaps->id,
@@ -109,7 +120,7 @@ class ProductSeeder extends Seeder
                 'price' => 550000,
                 'stock' => 35,
                 'is_active' => true,
-                'keycap_texture_uv' => '/dreamboard_uv.png',
+                'keycap_texture_uv' => '/keycap_uv-2.png',
             ],
             [
                 'category_id' => $keycaps->id,
@@ -119,7 +130,7 @@ class ProductSeeder extends Seeder
                 'price' => 750000,
                 'stock' => 20,
                 'is_active' => true,
-                'keycap_texture_uv' => '/oldschool_uv.png',
+                'keycap_texture_uv' => '/keycap_uv-4.png',
             ],
         ];
 

@@ -52,27 +52,17 @@ class ProductController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'is_active' => ['boolean'],
             'is_homepage_featured' => ['nullable', 'boolean'],
-            'switch_asset_profile' => ['nullable', 'string', Rule::in(Product::SWITCH_ASSET_PROFILES)],
-            'keycap_texture_uv' => ['nullable', 'string', 'max:2048'],
+            'switch_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6})$/'],
+            'switch_type' => ['nullable', 'string', Rule::in(Product::SWITCH_TYPES)],
+            'switch_sounds' => ['nullable', 'array', 'max:3'],
+            'switch_sounds.*' => ['file', 'mimetypes:audio/mpeg,audio/wav,audio/x-wav,audio/ogg,audio/mp4,audio/x-m4a,audio/aac', 'max:10240'],
+            'keycap_texture_uv' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'keyboard_texture_uv' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
-        $validated['is_homepage_featured'] = $request->boolean('is_homepage_featured');
-        $validated['switch_asset_profile'] = $this->normalizeSwitchAssetProfile(
-            (int) $validated['category_id'],
-            $validated['switch_asset_profile'] ?? null,
-        );
-        $validated['keycap_texture_uv'] = $this->normalizeKeycapTextureUv(
-            (int) $validated['category_id'],
-            $validated['keycap_texture_uv'] ?? null,
-        );
-        $this->validateHomepageFeature(
-            (int) $validated['category_id'],
-            $validated['is_homepage_featured'],
-            $validated['switch_asset_profile'],
-        );
 
         $validated['slug'] = Str::slug($validated['name']);
 
-        // Check slug uniqueness
+        // Check slug uniqueness before any storage side effects.
         if (Product::where('slug', $validated['slug'])->exists()) {
             return response()->json([
                 'message' => 'A product with a similar name already exists.',
@@ -80,11 +70,82 @@ class ProductController extends Controller
             ], 422);
         }
 
+        $categoryId = (int) $validated['category_id'];
+        $categorySlug = $this->resolveCategorySlug($categoryId);
+        $newlyStoredPaths = [];
+        $pathsToDeleteAfterSave = [];
+        $switchSoundPathsForValidation = $this->resolveSwitchSoundValidationPaths(
+            $request,
+            $categorySlug,
+            [],
+        );
+
+        $validated['is_homepage_featured'] = $request->boolean('is_homepage_featured');
+        $validated['switch_color'] = $this->normalizeSwitchColor(
+            $categorySlug,
+            $validated['switch_color'] ?? null,
+        );
+        $validated['switch_type'] = $this->normalizeSwitchType(
+            $categorySlug,
+            $validated['switch_type'] ?? null,
+        );
+        $this->validateSwitchRequirements(
+            $categorySlug,
+            $validated['switch_color'],
+            $validated['switch_type'],
+            $switchSoundPathsForValidation,
+        );
+        $this->validateHomepageFeature(
+            $categorySlug,
+            $validated['is_homepage_featured'],
+            $validated['switch_color'],
+            $validated['switch_type'],
+            $switchSoundPathsForValidation,
+        );
+
+        $validated['keycap_texture_uv'] = $this->resolveTextureUpload(
+            $request,
+            'keycap_texture_uv',
+            null,
+            'products/keycap-textures',
+            $this->isKeycapCategory($categorySlug),
+            $newlyStoredPaths,
+            $pathsToDeleteAfterSave,
+        );
+        $validated['keyboard_texture_uv'] = $this->resolveTextureUpload(
+            $request,
+            'keyboard_texture_uv',
+            null,
+            'products/keyboard-textures',
+            $this->isKeyboardCategory($categorySlug),
+            $newlyStoredPaths,
+            $pathsToDeleteAfterSave,
+        );
+
+        $validated['switch_sound_paths'] = $this->resolveSwitchSoundPaths(
+            $request,
+            $categorySlug,
+            [],
+            $newlyStoredPaths,
+            $pathsToDeleteAfterSave,
+        );
+
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('products', 'public');
+            $newlyStoredPaths[] = $validated['image'];
         }
 
-        $product = Product::create($validated);
+        if (empty($validated['switch_sound_paths'])) {
+            $validated['switch_sound_paths'] = null;
+        }
+
+        try {
+            $product = Product::create($validated);
+        } catch (\Throwable $exception) {
+            $this->deleteStoredFiles($newlyStoredPaths);
+            throw $exception;
+        }
+
         $product->load('category');
 
         return response()->json([
@@ -117,24 +178,13 @@ class ProductController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'is_active' => ['boolean'],
             'is_homepage_featured' => ['nullable', 'boolean'],
-            'switch_asset_profile' => ['nullable', 'string', Rule::in(Product::SWITCH_ASSET_PROFILES)],
-            'keycap_texture_uv' => ['nullable', 'string', 'max:2048'],
+            'switch_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6})$/'],
+            'switch_type' => ['nullable', 'string', Rule::in(Product::SWITCH_TYPES)],
+            'switch_sounds' => ['nullable', 'array', 'max:3'],
+            'switch_sounds.*' => ['file', 'mimetypes:audio/mpeg,audio/wav,audio/x-wav,audio/ogg,audio/mp4,audio/x-m4a,audio/aac', 'max:10240'],
+            'keycap_texture_uv' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'keyboard_texture_uv' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
-        $validated['is_homepage_featured'] = $request->boolean('is_homepage_featured');
-        $validated['switch_asset_profile'] = $this->normalizeSwitchAssetProfile(
-            (int) $validated['category_id'],
-            $validated['switch_asset_profile'] ?? null,
-        );
-        $validated['keycap_texture_uv'] = $this->normalizeKeycapTextureUv(
-            (int) $validated['category_id'],
-            $validated['keycap_texture_uv'] ?? null,
-        );
-        $this->validateHomepageFeature(
-            (int) $validated['category_id'],
-            $validated['is_homepage_featured'],
-            $validated['switch_asset_profile'],
-            $product->id,
-        );
 
         $newSlug = Str::slug($validated['name']);
 
@@ -145,16 +195,89 @@ class ProductController extends Controller
             ], 422);
         }
 
+        $categoryId = (int) $validated['category_id'];
+        $categorySlug = $this->resolveCategorySlug($categoryId);
+        $newlyStoredPaths = [];
+        $pathsToDeleteAfterSave = [];
+        $existingSwitchSoundPaths = $this->normalizeSoundPathArray($product->switch_sound_paths);
+        $switchSoundPathsForValidation = $this->resolveSwitchSoundValidationPaths(
+            $request,
+            $categorySlug,
+            $existingSwitchSoundPaths,
+        );
+        $validated['is_homepage_featured'] = $request->boolean('is_homepage_featured');
+        $validated['switch_color'] = $this->normalizeSwitchColor(
+            $categorySlug,
+            $validated['switch_color'] ?? $product->switch_color,
+        );
+        $validated['switch_type'] = $this->normalizeSwitchType(
+            $categorySlug,
+            $validated['switch_type'] ?? $product->switch_type,
+        );
+        $this->validateSwitchRequirements(
+            $categorySlug,
+            $validated['switch_color'],
+            $validated['switch_type'],
+            $switchSoundPathsForValidation,
+        );
+        $this->validateHomepageFeature(
+            $categorySlug,
+            $validated['is_homepage_featured'],
+            $validated['switch_color'],
+            $validated['switch_type'],
+            $switchSoundPathsForValidation,
+            $product->id,
+        );
+
+        $validated['keycap_texture_uv'] = $this->resolveTextureUpload(
+            $request,
+            'keycap_texture_uv',
+            $product->keycap_texture_uv,
+            'products/keycap-textures',
+            $this->isKeycapCategory($categorySlug),
+            $newlyStoredPaths,
+            $pathsToDeleteAfterSave,
+        );
+        $validated['keyboard_texture_uv'] = $this->resolveTextureUpload(
+            $request,
+            'keyboard_texture_uv',
+            $product->keyboard_texture_uv,
+            'products/keyboard-textures',
+            $this->isKeyboardCategory($categorySlug),
+            $newlyStoredPaths,
+            $pathsToDeleteAfterSave,
+        );
+
+        $validated['switch_sound_paths'] = $this->resolveSwitchSoundPaths(
+            $request,
+            $categorySlug,
+            $existingSwitchSoundPaths,
+            $newlyStoredPaths,
+            $pathsToDeleteAfterSave,
+        );
+
         $validated['slug'] = $newSlug;
 
         if ($request->hasFile('image')) {
-            if ($product->image) {
-                Storage::disk('public')->delete($product->image);
-            }
             $validated['image'] = $request->file('image')->store('products', 'public');
+            $newlyStoredPaths[] = $validated['image'];
+            if ($product->image) {
+                $pathsToDeleteAfterSave[] = $product->image;
+            }
         }
 
-        $product->update($validated);
+        if (empty($validated['switch_sound_paths'])) {
+            $validated['switch_sound_paths'] = null;
+        }
+
+        try {
+            $product->update($validated);
+        } catch (\Throwable $exception) {
+            $this->deleteStoredFiles($newlyStoredPaths);
+            throw $exception;
+        }
+
+        $this->deleteStoredFiles($this->uniquePaths($pathsToDeleteAfterSave));
         $product->load('category');
 
         return response()->json([
@@ -175,9 +298,10 @@ class ProductController extends Controller
             ], 422);
         }
 
-        if ($product->image) {
-            Storage::disk('public')->delete($product->image);
-        }
+        $this->deleteStoredFile($product->image);
+        $this->deleteStoredFile($product->keycap_texture_uv);
+        $this->deleteStoredFile($product->keyboard_texture_uv);
+        $this->deleteStoredFiles($this->normalizeSoundPathArray($product->switch_sound_paths));
 
         $product->delete();
 
@@ -190,16 +314,15 @@ class ProductController extends Controller
      * Featured homepage slots are reserved for up to 4 switch products.
      */
     protected function validateHomepageFeature(
-        int $categoryId,
+        ?string $categorySlug,
         bool $isHomepageFeatured,
-        ?string $switchAssetProfile,
+        ?string $switchColor,
+        ?string $switchType,
+        array $switchSoundPaths,
         ?int $ignoreProductId = null,
     ): void
     {
-        $isSwitchCategory = Category::query()
-            ->whereKey($categoryId)
-            ->where('slug', 'switches')
-            ->exists();
+        $isSwitchCategory = $this->isSwitchCategory($categorySlug);
 
         if (!$isSwitchCategory) {
             if (!$isHomepageFeatured) {
@@ -211,9 +334,12 @@ class ProductController extends Controller
             ]);
         }
 
-        if ($isHomepageFeatured && !$switchAssetProfile) {
+        if (
+            $isHomepageFeatured
+            && (!$switchColor || !$switchType || count($switchSoundPaths) === 0)
+        ) {
             throw ValidationException::withMessages([
-                'switch_asset_profile' => ['Choose a switch asset profile before featuring this product on the homepage.'],
+                'is_homepage_featured' => ['Featured switch products require color, type, and at least one sound file.'],
             ]);
         }
 
@@ -238,33 +364,214 @@ class ProductController extends Controller
         }
     }
 
-    protected function normalizeSwitchAssetProfile(int $categoryId, ?string $switchAssetProfile): ?string
+    protected function validateSwitchRequirements(
+        ?string $categorySlug,
+        ?string $switchColor,
+        ?string $switchType,
+        array $switchSoundPaths,
+    ): void
     {
-        $isSwitchCategory = Category::query()
-            ->whereKey($categoryId)
-            ->where('slug', 'switches')
-            ->exists();
-
-        if (!$isSwitchCategory) {
-            return null;
+        if (!$this->isSwitchCategory($categorySlug)) {
+            return;
         }
 
-        return $switchAssetProfile;
+        $errors = [];
+
+        if (!$switchColor) {
+            $errors['switch_color'] = ['Switch color is required for switch products.'];
+        }
+
+        if (!$switchType) {
+            $errors['switch_type'] = ['Switch type is required for switch products.'];
+        }
+
+        if (count($switchSoundPaths) === 0) {
+            $errors['switch_sounds'] = ['Upload at least one switch sound file.'];
+        }
+
+        if (!empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
-    protected function normalizeKeycapTextureUv(int $categoryId, ?string $keycapTextureUv): ?string
+    protected function normalizeSwitchColor(?string $categorySlug, ?string $switchColor): ?string
     {
-        $isKeycapCategory = Category::query()
-            ->whereKey($categoryId)
-            ->where('slug', 'keycaps')
-            ->exists();
-
-        if (!$isKeycapCategory) {
+        if (!$this->isSwitchCategory($categorySlug)) {
             return null;
         }
 
-        $normalized = trim((string) $keycapTextureUv);
+        $normalized = strtoupper(trim((string) $switchColor));
 
         return $normalized !== '' ? $normalized : null;
+    }
+
+    protected function normalizeSwitchType(?string $categorySlug, ?string $switchType): ?string
+    {
+        if (!$this->isSwitchCategory($categorySlug)) {
+            return null;
+        }
+
+        $normalized = strtolower(trim((string) $switchType));
+
+        return $normalized !== '' ? $normalized : null;
+    }
+
+    protected function resolveSwitchSoundPaths(
+        Request $request,
+        ?string $categorySlug,
+        array $existingPaths,
+        array &$newlyStoredPaths,
+        array &$pathsToDeleteAfterSave,
+    ): array {
+        if (!$this->isSwitchCategory($categorySlug)) {
+            $pathsToDeleteAfterSave = array_merge($pathsToDeleteAfterSave, $existingPaths);
+            return [];
+        }
+
+        $uploadedFiles = $request->file('switch_sounds');
+
+        if (!$uploadedFiles) {
+            return $existingPaths;
+        }
+
+        if (!is_array($uploadedFiles)) {
+            $uploadedFiles = [$uploadedFiles];
+        }
+
+        $uploadedFiles = array_slice($uploadedFiles, 0, 3);
+
+        $storedPaths = [];
+        foreach ($uploadedFiles as $uploadedFile) {
+            if (!$uploadedFile) {
+                continue;
+            }
+
+            $path = $uploadedFile->store('products/switch-sounds', 'public');
+            $storedPaths[] = $path;
+            $newlyStoredPaths[] = $path;
+        }
+
+        $pathsToDeleteAfterSave = array_merge($pathsToDeleteAfterSave, $existingPaths);
+
+        return $storedPaths;
+    }
+
+    protected function resolveSwitchSoundValidationPaths(
+        Request $request,
+        ?string $categorySlug,
+        array $existingPaths,
+    ): array {
+        if (!$this->isSwitchCategory($categorySlug)) {
+            return [];
+        }
+
+        $uploadedFiles = $request->file('switch_sounds');
+
+        if (!$uploadedFiles) {
+            return $existingPaths;
+        }
+
+        if (!is_array($uploadedFiles)) {
+            $uploadedFiles = [$uploadedFiles];
+        }
+
+        $uploadedFiles = array_values(array_filter(array_slice($uploadedFiles, 0, 3)));
+
+        return array_map(function ($uploadedFile): string {
+            return (string) $uploadedFile->getClientOriginalName();
+        }, $uploadedFiles);
+    }
+
+    protected function resolveTextureUpload(
+        Request $request,
+        string $field,
+        ?string $currentPath,
+        string $storagePath,
+        bool $isMatchingCategory,
+        array &$newlyStoredPaths,
+        array &$pathsToDeleteAfterSave,
+    ): ?string {
+        if (!$isMatchingCategory) {
+            if ($currentPath) {
+                $pathsToDeleteAfterSave[] = $currentPath;
+            }
+            return null;
+        }
+
+        if (!$request->hasFile($field)) {
+            return $currentPath;
+        }
+
+        if ($currentPath) {
+            $pathsToDeleteAfterSave[] = $currentPath;
+        }
+
+        $storedPath = $request->file($field)->store($storagePath, 'public');
+        $newlyStoredPaths[] = $storedPath;
+
+        return $storedPath;
+    }
+
+    protected function normalizeSoundPathArray(mixed $soundPaths): array
+    {
+        if (!is_array($soundPaths)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(function ($path): string {
+            return is_string($path) ? trim($path) : '';
+        }, $soundPaths)));
+    }
+
+    protected function deleteStoredFiles(array $paths): void
+    {
+        foreach ($paths as $path) {
+            $this->deleteStoredFile($path);
+        }
+    }
+
+    protected function uniquePaths(array $paths): array
+    {
+        return array_values(array_unique(array_filter($paths, function ($path): bool {
+            return is_string($path) && trim($path) !== '';
+        })));
+    }
+
+    protected function deleteStoredFile(?string $path): void
+    {
+        if (!$this->isStorageManagedPath($path)) {
+            return;
+        }
+
+        Storage::disk('public')->delete($path);
+    }
+
+    protected function isStorageManagedPath(?string $path): bool
+    {
+        if (!$path) {
+            return false;
+        }
+
+        return !Str::startsWith($path, ['http://', 'https://', '/']);
+    }
+
+    protected function resolveCategorySlug(int $categoryId): ?string
+    {
+        return Category::query()->whereKey($categoryId)->value('slug');
+    }
+
+    protected function isSwitchCategory(?string $categorySlug): bool
+    {
+        return $categorySlug === 'switches';
+    }
+
+    protected function isKeycapCategory(?string $categorySlug): bool
+    {
+        return $categorySlug === 'keycaps';
+    }
+
+    protected function isKeyboardCategory(?string $categorySlug): bool
+    {
+        return $categorySlug === 'keyboards';
     }
 }
