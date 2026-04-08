@@ -6,7 +6,7 @@ Project ini berjalan sebagai API-only service dengan autentikasi cookie-based (L
 
 ## Repo Terkait
 
-- Frontend repository: https://github.com/albifhrzq/keyverxe-be
+- Frontend repository: https://github.com/albifhrzq/keyverxe-fe
 
 ## Tech Stack
 
