@@ -18,27 +18,27 @@ class ProductSeeder extends Seeder
             // Keyboards (3)
             [
                 'category_id' => $keyboards->id,
-                'name' => 'Vapor 75',
+                'name' => 'Vapor 75 Blue Switch',
                 'slug' => 'vapor-75',
-                'description' => 'A premium 75% gasket-mounted mechanical keyboard with aluminum case, hot-swappable PCB, south-facing RGB LEDs, and a rotary knob. The perfect balance between compact and functional.',
+                'description' => 'A complete 75% keyboard build with a gasket mount, aluminum case, hot-swappable PCB, and rotary knob. This setup uses Azure Clicky (Blue) switches for a crisp tactile feel and a lively clicky sound. It is paired with navy Midnight Cherry PBT keycaps for a premium, high-contrast look.',
                 'price' => 2500000,
                 'stock' => 25,
                 'is_active' => true,
             ],
             [
                 'category_id' => $keyboards->id,
-                'name' => 'Phantom 65',
+                'name' => 'Phantom 65 Brown Switch',
                 'slug' => 'phantom-65',
-                'description' => 'A sleek 65% wireless mechanical keyboard with Bluetooth 5.0 and 2.4GHz connectivity. CNC aluminum frame with silicone dampening for a deep, thocky sound profile.',
+                'description' => 'A complete 65% keyboard build with Bluetooth 5.0 and 2.4GHz connectivity for flexible daily use. This setup features Nebula Tactile (Brown) switches with a satisfying tactile bump that is ideal for typing. It uses navy Midnight Cherry PBT keycaps to keep the overall look clean and elegant.',
                 'price' => 1850000,
                 'stock' => 30,
                 'is_active' => true,
             ],
             [
                 'category_id' => $keyboards->id,
-                'name' => 'Eclipse TKL',
+                'name' => 'Eclipse TKL Black Switch',
                 'slug' => 'eclipse-tkl',
-                'description' => 'Tenkeyless layout with a polycarbonate bottom case for stunning RGB underglow. Features a flex-cut PCB and Poron foam layers for an unmatched typing experience.',
+                'description' => 'A complete TKL keyboard build with a polycarbonate bottom case, flex-cut PCB, and Poron foam layers for a more controlled typing acoustics profile. This setup uses Frost Silent Linear (Black) switches to deliver smooth keypresses with reduced noise during long sessions. Navy Midnight Cherry PBT keycaps complete the dark, minimal visual theme.',
                 'price' => 3200000,
                 'stock' => 15,
                 'is_active' => true,
@@ -124,7 +124,10 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($products as $product) {
-            Product::create($product);
+            Product::updateOrCreate(
+                ['slug' => $product['slug']],
+                $product
+            );
         }
     }
 }
