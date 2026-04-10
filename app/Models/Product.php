@@ -22,6 +22,7 @@ class Product extends Model
         'description',
         'price',
         'stock',
+        'reserved_quantity',
         'image',
         'is_active',
         'is_homepage_featured',
@@ -36,6 +37,8 @@ class Product extends Model
     {
         return [
             'price' => 'decimal:2',
+            'stock' => 'integer',
+            'reserved_quantity' => 'integer',
             'is_active' => 'boolean',
             'is_homepage_featured' => 'boolean',
             'switch_sound_paths' => 'array',

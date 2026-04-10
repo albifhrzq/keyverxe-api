@@ -12,6 +12,7 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'order_number',
+        'idempotency_key',
         'total_amount',
         'status',
         'shipping_address',
@@ -47,6 +48,22 @@ class Order extends Model
     public function payment(): HasOne
     {
         return $this->hasOne(Payment::class);
+    }
+
+    /**
+     * Scope pending orders that are still waiting for payment.
+     */
+    public function scopeActivePendingForUser($query, int $userId)
+    {
+        return $query
+            ->where('user_id', $userId)
+            ->where('status', 'pending')
+            ->where(function ($pendingQuery) {
+                $pendingQuery->whereDoesntHave('payment')
+                    ->orWhereHas('payment', function ($paymentQuery) {
+                        $paymentQuery->where('status', 'pending');
+                    });
+            });
     }
 
     /**

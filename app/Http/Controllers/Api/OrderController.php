@@ -36,4 +36,39 @@ class OrderController extends Controller
 
         return response()->json($order);
     }
+
+    /**
+     * Summarize pending unpaid orders for checkout warning UX.
+     */
+    public function pendingSummary(Request $request): JsonResponse
+    {
+        $userId = $request->user()->id;
+        $maxPendingOrders = max((int) config('services.checkout.max_pending_orders', 3), 1);
+
+        $pendingOrdersQuery = Order::with('payment')
+            ->activePendingForUser($userId)
+            ->latest();
+
+        $pendingOrdersCount = (clone $pendingOrdersQuery)->count();
+        $pendingOrders = $pendingOrdersQuery
+            ->limit($maxPendingOrders)
+            ->get()
+            ->map(function (Order $order) {
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'total_amount' => $order->total_amount,
+                    'created_at' => $order->created_at,
+                    'invoice_url' => $order->payment?->xendit_invoice_url,
+                    'expires_at' => $order->payment?->expires_at,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'count' => $pendingOrdersCount,
+            'max_pending_orders' => $maxPendingOrders,
+            'orders' => $pendingOrders,
+        ]);
+    }
 }

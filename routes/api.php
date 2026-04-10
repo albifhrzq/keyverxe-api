@@ -39,6 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:customer')->group(function () {
         Route::post('/checkout', [CheckoutController::class, 'store']);
         Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/orders/pending-summary', [OrderController::class, 'pendingSummary']);
         Route::get('/orders/{order}', [OrderController::class, 'show']);
     });
 

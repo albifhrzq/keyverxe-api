@@ -16,6 +16,7 @@ class Payment extends Model
         'status',
         'xendit_response',
         'paid_at',
+        'expires_at',
     ];
 
     protected function casts(): array
@@ -24,6 +25,7 @@ class Payment extends Model
             'amount' => 'decimal:2',
             'xendit_response' => 'json',
             'paid_at' => 'datetime',
+            'expires_at' => 'datetime',
         ];
     }
 

@@ -40,6 +40,11 @@ return [
         'webhook_token' => env('XENDIT_WEBHOOK_TOKEN'),
         'success_redirect_url' => env('XENDIT_SUCCESS_REDIRECT_URL', 'http://localhost:3000/orders'),
         'failure_redirect_url' => env('XENDIT_FAILURE_REDIRECT_URL', 'http://localhost:3000/checkout/failed'),
+        'invoice_duration' => (int) env('XENDIT_INVOICE_DURATION', 86400),
+    ],
+
+    'checkout' => [
+        'max_pending_orders' => (int) env('CHECKOUT_MAX_PENDING_ORDERS', 3),
     ],
 
 ];

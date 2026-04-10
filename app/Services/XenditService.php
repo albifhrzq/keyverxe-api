@@ -24,6 +24,8 @@ class XenditService
      */
     public function createInvoice(array $data): array
     {
+        $invoiceDuration = max((int) config('services.xendit.invoice_duration', 86400), 60);
+
         $request = new CreateInvoiceRequest([
             'external_id' => $data['external_id'],
             'amount' => $data['amount'],
@@ -32,7 +34,7 @@ class XenditService
             'success_redirect_url' => config('services.xendit.success_redirect_url'),
             'failure_redirect_url' => config('services.xendit.failure_redirect_url'),
             'currency' => 'IDR',
-            'invoice_duration' => 86400, // 24 hours
+            'invoice_duration' => $invoiceDuration,
         ]);
 
         $response = $this->invoiceApi->createInvoice($request);
